@@ -1804,30 +1804,38 @@ body.light .theme-toggle {
 .lc-heatmap-cell {
     aspect-ratio: 1;
     border-radius: 2px;
-    background: var(--lc-green);
-    opacity: 0.08;
+    background: rgba(255, 255, 255, 0.06);
     transition: all 0.2s ease;
+}
+
+body.light .lc-heatmap-cell {
+    background: rgba(0, 0, 0, 0.06);
 }
 
 .lc-heatmap-cell:hover {
     transform: scale(1.5);
     z-index: 1;
+    opacity: 1 !important;
 }
 
 .lc-heatmap-cell.l1 {
-    opacity: 0.2;
+    background: var(--lc-green);
+    opacity: 0.3;
 }
 
 .lc-heatmap-cell.l2 {
-    opacity: 0.4;
+    background: var(--lc-green);
+    opacity: 0.55;
 }
 
 .lc-heatmap-cell.l3 {
-    opacity: 0.65;
+    background: var(--lc-green);
+    opacity: 0.8;
 }
 
 .lc-heatmap-cell.l4 {
-    opacity: 0.9;
+    background: var(--lc-green);
+    opacity: 1;
 }
 
 .lc-heatmap-cell.future {
