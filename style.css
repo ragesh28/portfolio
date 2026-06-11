@@ -1767,12 +1767,38 @@ body.light .theme-toggle {
     color: var(--text-muted);
 }
 
+.lc-heatmap-wrapper {
+    overflow-x: auto;
+    width: 100%;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+}
+
+.lc-heatmap-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+
+.lc-heatmap-wrapper::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.lc-heatmap-wrapper::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+}
+
+.lc-heatmap-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
 .lc-heatmap {
     display: grid;
-    grid-template-columns: repeat(52, 1fr);
+    grid-template-columns: repeat(52, minmax(0, 1fr));
     grid-template-rows: repeat(7, 1fr);
+    grid-auto-flow: column;
     gap: 3px;
     margin-bottom: 8px;
+    min-width: 650px;
 }
 
 .lc-heatmap-cell {
@@ -1804,12 +1830,23 @@ body.light .theme-toggle {
     opacity: 0.9;
 }
 
+.lc-heatmap-cell.future {
+    opacity: 0.02;
+    pointer-events: none;
+}
+
 .lc-heatmap-months {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
+    grid-template-columns: repeat(52, minmax(0, 1fr));
+    gap: 3px;
     font-size: 0.7rem;
     color: var(--text-muted);
     margin-bottom: 12px;
+    min-width: 650px;
+}
+
+.lc-heatmap-months span {
+    white-space: nowrap;
 }
 
 .lc-heatmap-legend {
@@ -2593,9 +2630,5 @@ body.light .theme-toggle {
     .ai-chat-panel {
         width: calc(100vw - 48px);
         right: -12px;
-    }
-
-    .lc-heatmap {
-        grid-template-columns: repeat(26, 1fr);
     }
 }

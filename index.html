@@ -32,7 +32,7 @@
     }
     </script>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.2">
 </head>
 
 <body class="dark">
@@ -381,11 +381,9 @@
                                 Total active days: <strong class="lc-active-days">188</strong> &nbsp;·&nbsp; Max streak: <strong class="lc-max-streak">118</strong>
                             </div>
                         </div>
-                        <div class="lc-heatmap" id="lc-heatmap"></div>
-                        <div class="lc-heatmap-months">
-                            <span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
-                            <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
-                            <span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span>
+                        <div class="lc-heatmap-wrapper">
+                            <div class="lc-heatmap" id="lc-heatmap"></div>
+                            <div class="lc-heatmap-months"></div>
                         </div>
                         <div class="lc-heatmap-legend">
                             <span>Less</span>
@@ -646,7 +644,7 @@
 
 
     <script type="module" src="eve-scene.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=1.2"></script>
 </body>
 
 </html>

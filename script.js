@@ -321,6 +321,11 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
                 highlightBadge.textContent = badgesData.badges[0].displayName || '50 Days Badge 2026';
             }
             
+            // 5. Update real heatmap dynamically
+            if (calendarData.submissionCalendar) {
+                generateHeatmap(calendarData.submissionCalendar);
+            }
+            
         } catch (error) {
             console.error('Error loading LeetCode data:', error);
         } finally {
@@ -368,58 +373,140 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
 
     $$('.reveal').forEach((el) => revealObserver.observe(el));
 
+    // ===== LEETCODE MONTH LABELS =====
+    function generateMonthLabels(startDate) {
+        const container = $('.lc-heatmap-months');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        if (!startDate) {
+            // Default fallback: evenly spaced labels
+            monthNames.forEach(name => {
+                const span = document.createElement('span');
+                span.textContent = name;
+                container.appendChild(span);
+            });
+            return;
+        }
+
+        // We have 52 columns (weeks). Let's find which columns start a new month.
+        let lastMonth = -1;
+        for (let week = 0; week < 52; week++) {
+            const weekSunday = new Date(startDate);
+            weekSunday.setDate(startDate.getDate() + week * 7);
+            
+            const currentMonth = weekSunday.getMonth();
+            if (currentMonth !== lastMonth) {
+                const monthName = weekSunday.toLocaleDateString('en-US', { month: 'short' });
+                const span = document.createElement('span');
+                span.textContent = monthName;
+                span.style.gridColumnStart = week + 1;
+                container.appendChild(span);
+                lastMonth = currentMonth;
+            }
+        }
+    }
+
     // ===== LEETCODE HEATMAP =====
-    function generateHeatmap() {
+    function generateHeatmap(submissionCalendarStr) {
         const heatmap = $('#lc-heatmap');
         if (!heatmap) return;
+        heatmap.innerHTML = ''; // Clear
 
         const totalCells = 52 * 7; // 52 weeks × 7 days
         const fragment = document.createDocumentFragment();
 
-        // Pattern inspired by the screenshot: sparse early, dense later
-        for (let i = 0; i < totalCells; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'lc-heatmap-cell';
+        // Calculate Sunday-to-Saturday aligned date range for 52 weeks
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-            const week = Math.floor(i / 7);
-            const rand = Math.random();
+        const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        const endOffset = 6 - currentDayOfWeek; // days until Saturday of current week
+        const endDate = new Date(today);
+        endDate.setDate(today.getDate() + endOffset);
 
-            // Sparse early months (weeks 0-20), growing density
-            if (week < 10) {
-                if (rand > 0.92) cell.classList.add('l1');
-            } else if (week < 20) {
-                if (rand > 0.85) cell.classList.add('l1');
-                else if (rand > 0.93) cell.classList.add('l2');
-            } else if (week < 28) {
-                if (rand > 0.7) cell.classList.add('l1');
-                else if (rand > 0.85) cell.classList.add('l2');
-            } else if (week < 36) {
-                // Dense period (Aug-Oct) matching screenshot
-                if (rand > 0.3) {
-                    const level = rand > 0.8 ? 'l4' : rand > 0.6 ? 'l3' : rand > 0.45 ? 'l2' : 'l1';
-                    cell.classList.add(level);
-                }
-            } else if (week < 44) {
-                // Very dense (Nov-Dec)
-                if (rand > 0.2) {
-                    const level = rand > 0.75 ? 'l4' : rand > 0.5 ? 'l3' : rand > 0.35 ? 'l2' : 'l1';
-                    cell.classList.add(level);
-                }
-            } else {
-                // Recent months (Jan-Feb)
-                if (rand > 0.25) {
-                    const level = rand > 0.7 ? 'l4' : rand > 0.5 ? 'l3' : rand > 0.35 ? 'l2' : 'l1';
-                    cell.classList.add(level);
-                }
+        const startDate = new Date(endDate);
+        startDate.setDate(endDate.getDate() - 363); // 364 days total (52 weeks)
+
+        let submissions = {};
+        if (submissionCalendarStr) {
+            try {
+                submissions = JSON.parse(submissionCalendarStr);
+            } catch (e) {
+                console.error('Failed to parse submission calendar:', e);
             }
-
-            fragment.appendChild(cell);
         }
 
+        const cellsData = [];
+        for (let i = 0; i < totalCells; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            
+            const isFuture = date > today;
+            
+            // LeetCode calendar API timestamps are UTC midnight in seconds
+            const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const utcTimestamp = Math.floor(utcDate.getTime() / 1000).toString();
+            
+            let count = 0;
+            if (submissionCalendarStr) {
+                count = isFuture ? 0 : (submissions[utcTimestamp] || 0);
+            } else {
+                // Fallback / Loading state: random but realistic contributions
+                const week = Math.floor(i / 7);
+                const rand = Math.random();
+                if (!isFuture) {
+                    if (week < 10) {
+                        if (rand > 0.92) count = 1;
+                    } else if (week < 20) {
+                        if (rand > 0.85) count = 1;
+                        else if (rand > 0.93) count = 3;
+                    } else if (week < 28) {
+                        if (rand > 0.7) count = 1;
+                        else if (rand > 0.85) count = 3;
+                    } else if (week < 36) {
+                        if (rand > 0.3) {
+                            count = rand > 0.8 ? 8 : rand > 0.6 ? 5 : rand > 0.45 ? 3 : 1;
+                        }
+                    } else {
+                        if (rand > 0.25) {
+                            count = rand > 0.7 ? 8 : rand > 0.5 ? 5 : rand > 0.35 ? 3 : 1;
+                        }
+                    }
+                }
+            }
+            cellsData.push({ date, count, isFuture });
+        }
+
+        cellsData.forEach(cell => {
+            const cellEl = document.createElement('div');
+            cellEl.className = 'lc-heatmap-cell';
+            
+            if (cell.isFuture) {
+                cellEl.classList.add('future');
+            } else if (cell.count > 0) {
+                let level = 'l1';
+                if (cell.count >= 8) level = 'l4';
+                else if (cell.count >= 5) level = 'l3';
+                else if (cell.count >= 3) level = 'l2';
+                cellEl.classList.add(level);
+            }
+            
+            const dateStr = cell.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const tooltipText = cell.isFuture ? `No submissions` : `${cell.count} submission${cell.count === 1 ? '' : 's'} on ${dateStr}`;
+            cellEl.title = tooltipText;
+            fragment.appendChild(cellEl);
+        });
+
         heatmap.appendChild(fragment);
+        
+        // Generate month labels aligned to this date range
+        generateMonthLabels(startDate);
     }
 
-    generateHeatmap();    // ===== EVE PREMIUM CHATRestoration =====
+    generateHeatmap();    // ===== EVE PREMIUM CHATRestoration =====
     const chatInput = $('#ai-chat-input');
     const chatSend = $('#ai-chat-send');
     const chatMessages = $('#ai-chat-messages');
