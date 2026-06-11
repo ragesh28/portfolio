@@ -192,15 +192,17 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
     // ===== FETCH LEETCODE STATS =====
     async function fetchLeetCodeStats() {
         try {
-            const [profileRes, contestRes] = await Promise.all([
+            const [profileRes, contestRes, badgesRes] = await Promise.all([
                 fetch('https://alfa-leetcode-api.onrender.com/lragesh28'),
-                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/contest')
+                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/contest'),
+                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/badges')
             ]);
             
-            if (!profileRes.ok || !contestRes.ok) throw new Error('LeetCode stats fetch failed');
+            if (!profileRes.ok || !contestRes.ok || !badgesRes.ok) throw new Error('LeetCode stats fetch failed');
             
             const profileData = await profileRes.json();
             const contestData = await contestRes.json();
+            const badgesData = await badgesRes.json();
             
             // 1. Update targets for counter animations
             const solvedStat = $('[data-target="150"]');
@@ -268,6 +270,31 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
             if (hardCircle) {
                 const hardOffset = 314.16 - (profileData.hardSolved || 2);
                 hardCircle.setAttribute('stroke-dashoffset', hardOffset);
+            }
+            
+            // 3. Update LeetCode Badges
+            const badgeCountVal = $('.lc-badge-count');
+            if (badgeCountVal) badgeCountVal.textContent = badgesData.badgesCount || 3;
+            
+            const badgesIconsContainer = $('.lc-badges-icons');
+            if (badgesIconsContainer && badgesData.badges) {
+                badgesIconsContainer.innerHTML = '';
+                badgesData.badges.slice(0, 3).forEach((badge, idx) => {
+                    const badgeEl = document.createElement('div');
+                    badgeEl.className = 'lc-badge';
+                    const colorClass = idx === 1 ? 'blue' : '';
+                    badgeEl.innerHTML = `
+                        <div class="lc-badge-hex ${colorClass}" style="padding: 8px; display: flex; align-items: center; justify-content: center;">
+                            <img src="${badge.icon}" alt="${badge.displayName}" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 4px rgba(255,255,255,0.15));" title="${badge.displayName}">
+                        </div>
+                    `;
+                    badgesIconsContainer.appendChild(badgeEl);
+                });
+            }
+            
+            const recentBadgeName = $('.lc-badge-info strong');
+            if (recentBadgeName && badgesData.badges && badgesData.badges.length > 0) {
+                recentBadgeName.textContent = badgesData.badges[0].displayName || '50 Days Badge 2026';
             }
             
         } catch (error) {
@@ -469,7 +496,7 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
 
     function getAIResponse(message) {
         const msg = message.toLowerCase();
-        if (msg.match(/hi|hello|hey|sup/)) return { text: portfolioKB.greeting, animation: 'greeting' };
+        if (msg.match(/\b(hi|hello|hey|sup)\b/)) return { text: portfolioKB.greeting, animation: 'greeting' };
         if (msg.match(/skill|tech|stack|language|tool/)) return { text: portfolioKB.skills, animation: 'nod' };
         if (msg.match(/project|work|build|made|portfolio/)) return { text: portfolioKB.projects, animation: 'excited' };
         if (msg.match(/leetcode|problem|solve|contest|rating|algorithm|dsa/)) return { text: portfolioKB.leetcode, animation: 'excited' };
@@ -570,7 +597,7 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
     function detectAnimation(userMsg, botReply) {
         const msg = userMsg.toLowerCase();
         const reply = botReply.toLowerCase();
-        if (msg.match(/hi|hello|hey|sup|greet/)) return 'greeting';
+        if (msg.match(/\b(hi|hello|hey|sup|greet)\b/)) return 'greeting';
         if (msg.match(/project|work|build|made|rag|career|weather|desktop|mcp/)) return 'excited';
         if (msg.match(/contact|email|reach|hire|connect|github|linkedin/)) return 'point';
         if (msg.match(/skill|tech|stack|language|tool|python|java/)) return 'nod';
