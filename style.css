@@ -12,22 +12,25 @@
     --text-primary: #f0f0f5;
     --text-secondary: #a0a0b8;
     --text-muted: #6b6b80;
-    --accent: #f59e0b;
-    --accent-light: #fbbf24;
-    --accent-rgb: 245, 158, 11;
-    --accent-glow: rgba(var(--accent-rgb), 0.25);
-    --gradient-1: linear-gradient(135deg, #f59e0b, #ef4444);
-    --gradient-2: linear-gradient(135deg, #ff6b6b, #ffa502);
-    --gradient-bg: radial-gradient(ellipse at 20% 50%, rgba(var(--accent-rgb), 0.08) 0%, transparent 50%),
+    
+    /* Dynamic HSL Accent Color Scheme */
+    --accent-hue: 38; /* Default orange hue */
+    --accent: hsl(var(--accent-hue), 91%, 50%);
+    --accent-light: hsl(var(--accent-hue), 97%, 60%);
+    --accent-glow: hsla(var(--accent-hue), 91%, 50%, 0.25);
+    --gradient-1: linear-gradient(135deg, hsl(var(--accent-hue), 91%, 50%), hsl(calc(var(--accent-hue) - 38), 84%, 60%));
+    --gradient-2: linear-gradient(135deg, hsl(calc(var(--accent-hue) - 38), 100%, 70%), hsl(var(--accent-hue), 100%, 50%));
+    --gradient-bg: radial-gradient(ellipse at 20% 50%, hsla(var(--accent-hue), 91%, 50%, 0.08) 0%, transparent 50%),
         radial-gradient(ellipse at 80% 20%, rgba(0, 212, 255, 0.06) 0%, transparent 50%);
+        
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 40px rgba(var(--accent-rgb), 0.15);
+    --shadow-glow: 0 0 40px hsla(var(--accent-hue), 91%, 50%, 0.15);
     --nav-bg: rgba(10, 10, 15, 0.85);
     --border-color: rgba(255, 255, 255, 0.06);
     --scrollbar-track: #1a1a2e;
-    --scrollbar-thumb: #f59e0b;
+    --scrollbar-thumb: hsl(var(--accent-hue), 91%, 50%);
     --lc-accent: #ffa116;
     --lc-easy: #00b8a3;
     --lc-medium: #ffc01e;
@@ -52,13 +55,13 @@ body.light {
     --text-primary: #1a1a2e;
     --text-secondary: #4a4a6a;
     --text-muted: #8a8aa0;
-    --accent-glow: rgba(var(--accent-rgb), 0.15);
-    --gradient-bg: radial-gradient(ellipse at 20% 50%, rgba(var(--accent-rgb), 0.06) 0%, transparent 50%),
+    --accent-glow: hsla(var(--accent-hue), 91%, 50%, 0.15);
+    --gradient-bg: radial-gradient(ellipse at 20% 50%, hsla(var(--accent-hue), 91%, 50%, 0.06) 0%, transparent 50%),
         radial-gradient(ellipse at 80% 20%, rgba(0, 180, 220, 0.05) 0%, transparent 50%);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
     --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.1);
-    --shadow-glow: 0 0 40px rgba(var(--accent-rgb), 0.1);
+    --shadow-glow: 0 0 40px hsla(var(--accent-hue), 91%, 50%, 0.1);
     --nav-bg: rgba(248, 249, 252, 0.9);
     --border-color: rgba(0, 0, 0, 0.06);
     --scrollbar-track: #e8e8f0;

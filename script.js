@@ -5,6 +5,21 @@
 (function () {
     'use strict';
 
+    // ===== DYNAMIC ACCENT COLOR ROTATION =====
+    function hslToRgbString(h, s, l) {
+        s /= 100;
+        l /= 100;
+        const k = n => (n + h / 30) % 12;
+        const a = s * Math.min(l, 1 - l);
+        const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+        return `${Math.round(255 * f(0))}, ${Math.round(255 * f(8))}, ${Math.round(255 * f(4))}`;
+    }
+
+    const randomHue = Math.floor(Math.random() * 360);
+    document.documentElement.style.setProperty('--accent-hue', randomHue);
+    document.documentElement.style.setProperty('--accent-rgb', hslToRgbString(randomHue, 91, 50));
+    console.log(`Initialized with random hue: ${randomHue}`);
+
     // ===== CONFIG =====
     const LOADING_DURATION = 3200; // ms for the loading overlay
 
@@ -191,143 +206,184 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
 
     // ===== FETCH LEETCODE STATS =====
     async function fetchLeetCodeStats() {
+        let profileData = null;
+        let contestData = null;
+        let badgesData = null;
+        let calendarData = null;
+
+        // Fetch individual endpoints in separate blocks to avoid cascading failures
         try {
-            const [profileRes, contestRes, badgesRes, calendarRes] = await Promise.all([
-                fetch('https://alfa-leetcode-api.onrender.com/userProfile/lragesh28'),
-                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/contest'),
-                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/badges'),
-                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/calendar')
-            ]);
-            
-            if (!profileRes.ok || !contestRes.ok || !badgesRes.ok || !calendarRes.ok) throw new Error('LeetCode stats fetch failed');
-            
-            const profileData = await profileRes.json();
-            const contestData = await contestRes.json();
-            const badgesData = await badgesRes.json();
-            const calendarData = await calendarRes.json();
-            
+            const res = await fetch('https://alfa-leetcode-api.onrender.com/userProfile/lragesh28');
+            if (res.ok) profileData = await res.json();
+            else console.warn('LeetCode profile fetch returned status:', res.status);
+        } catch (e) {
+            console.warn('Error fetching LeetCode profile:', e);
+        }
+
+        try {
+            const res = await fetch('https://alfa-leetcode-api.onrender.com/lragesh28/contest');
+            if (res.ok) contestData = await res.json();
+            else console.warn('LeetCode contest fetch returned status:', res.status);
+        } catch (e) {
+            console.warn('Error fetching LeetCode contest:', e);
+        }
+
+        try {
+            const res = await fetch('https://alfa-leetcode-api.onrender.com/lragesh28/badges');
+            if (res.ok) badgesData = await res.json();
+            else console.warn('LeetCode badges fetch returned status:', res.status);
+        } catch (e) {
+            console.warn('Error fetching LeetCode badges:', e);
+        }
+
+        try {
+            const res = await fetch('https://alfa-leetcode-api.onrender.com/lragesh28/calendar');
+            if (res.ok) calendarData = await res.json();
+            else console.warn('LeetCode calendar fetch returned status:', res.status);
+        } catch (e) {
+            console.warn('Error fetching LeetCode calendar:', e);
+        }
+
+        try {
             // 1. Update targets for counter animations
-            const solvedStat = $('[data-target="150"]');
-            if (solvedStat) solvedStat.setAttribute('data-target', profileData.totalSolved || 178);
+            if (profileData) {
+                const solvedStat = $('[data-target="150"]');
+                if (solvedStat) solvedStat.setAttribute('data-target', profileData.totalSolved || 178);
+                
+                const submissionsStat = $('[data-target="640"]');
+                if (submissionsStat) {
+                    const allSubs = profileData.totalSubmissions?.find(s => s.difficulty === 'All');
+                    submissionsStat.setAttribute('data-target', allSubs?.submissions || 673);
+                }
+            }
             
-            const ratingStat = $('[data-target="1414"]');
-            if (ratingStat) ratingStat.setAttribute('data-target', Math.round(contestData.contestRating) || 1414);
-            
-            const submissionsStat = $('[data-target="640"]');
-            if (submissionsStat) {
-                const allSubs = profileData.totalSubmissions?.find(s => s.difficulty === 'All');
-                submissionsStat.setAttribute('data-target', allSubs?.submissions || 673);
+            if (contestData) {
+                const ratingStat = $('[data-target="1414"]');
+                if (ratingStat) ratingStat.setAttribute('data-target', Math.round(contestData.contestRating) || 1414);
             }
             
             // 2. Update LeetCode Dashboard text values
-            const ratingVal = $('.lc-rating-value');
-            if (ratingVal) ratingVal.textContent = Math.round(contestData.contestRating).toLocaleString() || '1,414';
-            
-            const topPctVal = $('.lc-top-value');
-            if (topPctVal) {
-                topPctVal.innerHTML = `${contestData.contestTopPercentage || 78.61}<span class="lc-top-pct">%</span>`;
+            if (contestData) {
+                const ratingVal = $('.lc-rating-value');
+                if (ratingVal) ratingVal.textContent = Math.round(contestData.contestRating).toLocaleString() || '1,414';
+                
+                const topPctVal = $('.lc-top-value');
+                if (topPctVal) {
+                    topPctVal.innerHTML = `${contestData.contestTopPercentage || 78.61}<span class="lc-top-pct">%</span>`;
+                }
+
+                const rankingLabel = $('.lc-contest-card .lc-card-sub');
+                if (rankingLabel) {
+                    rankingLabel.innerHTML = `Global Ranking <strong>${(contestData.contestGlobalRanking || 684455).toLocaleString()}</strong>/${(contestData.totalParticipants || 874213).toLocaleString()} &nbsp;·&nbsp; Attended <strong class="lc-accent">${contestData.contestAttend || 1}</strong>`;
+                }
+
+                const highlightRating = $('.highlight-rating');
+                if (highlightRating) {
+                    highlightRating.textContent = `Contest Rating: ${Math.round(contestData.contestRating).toLocaleString() || '1,414'}`;
+                }
             }
             
-            const solvedCountVal = $('.lc-solved-count');
-            if (solvedCountVal) solvedCountVal.textContent = profileData.totalSolved || 178;
-            
-            const easySolvedVal = $('.lc-diff-item.lc-easy .lc-diff-value');
-            if (easySolvedVal) {
-                easySolvedVal.innerHTML = `${profileData.easySolved || 143}<span class="lc-diff-total">/${profileData.totalEasy || 949}</span>`;
-            }
-            const mediumSolvedVal = $('.lc-diff-item.lc-medium .lc-diff-value');
-            if (mediumSolvedVal) {
-                mediumSolvedVal.innerHTML = `${profileData.mediumSolved || 33}<span class="lc-diff-total">/${profileData.totalMedium || 2067}</span>`;
-            }
-            const hardSolvedVal = $('.lc-diff-item.lc-hard .lc-diff-value');
-            if (hardSolvedVal) {
-                hardSolvedVal.innerHTML = `${profileData.hardSolved || 2}<span class="lc-diff-total">/${profileData.totalHard || 942}</span>`;
-            }
-            
-            // Global ranking & attendance details
-            const rankingLabel = $('.lc-contest-card .lc-card-sub');
-            if (rankingLabel) {
-                rankingLabel.innerHTML = `Global Ranking <strong>${(contestData.contestGlobalRanking || 684455).toLocaleString()}</strong>/${(contestData.totalParticipants || 874213).toLocaleString()} &nbsp;·&nbsp; Attended <strong class="lc-accent">${contestData.contestAttend || 1}</strong>`;
-            }
-            
-            // Heatmap title totals
-            const heatmapTitleCount = $('.lc-submissions-count');
-            if (heatmapTitleCount) {
-                const allSubs = profileData.totalSubmissions?.find(s => s.difficulty === 'All');
-                heatmapTitleCount.textContent = (allSubs?.submissions || 673).toLocaleString();
-            }
-            
-            // Donut chart offsets
-            const easyCircle = $('.lc-donut-easy');
-            if (easyCircle) {
-                const easyOffset = 314.16 - (profileData.easySolved || 143);
-                easyCircle.setAttribute('stroke-dashoffset', easyOffset);
-            }
-            const mediumCircle = $('.lc-donut-medium');
-            if (mediumCircle) {
-                const mediumOffset = 314.16 - (profileData.mediumSolved || 33);
-                mediumCircle.setAttribute('stroke-dashoffset', mediumOffset);
-            }
-            const hardCircle = $('.lc-donut-hard');
-            if (hardCircle) {
-                const hardOffset = 314.16 - (profileData.hardSolved || 2);
-                hardCircle.setAttribute('stroke-dashoffset', hardOffset);
+            if (profileData) {
+                const solvedCountVal = $('.lc-solved-count');
+                if (solvedCountVal) solvedCountVal.textContent = profileData.totalSolved || 178;
+                
+                const easySolvedVal = $('.lc-diff-item.lc-easy .lc-diff-value');
+                if (easySolvedVal) {
+                    easySolvedVal.innerHTML = `${profileData.easySolved || 143}<span class="lc-diff-total">/${profileData.totalEasy || 949}</span>`;
+                }
+                const mediumSolvedVal = $('.lc-diff-item.lc-medium .lc-diff-value');
+                if (mediumSolvedVal) {
+                    mediumSolvedVal.innerHTML = `${profileData.mediumSolved || 33}<span class="lc-diff-total">/${profileData.totalMedium || 2067}</span>`;
+                }
+                const hardSolvedVal = $('.lc-diff-item.lc-hard .lc-diff-value');
+                if (hardSolvedVal) {
+                    hardSolvedVal.innerHTML = `${profileData.hardSolved || 2}<span class="lc-diff-total">/${profileData.totalHard || 942}</span>`;
+                }
+
+                // Heatmap title totals
+                const heatmapTitleCount = $('.lc-submissions-count');
+                if (heatmapTitleCount) {
+                    const allSubs = profileData.totalSubmissions?.find(s => s.difficulty === 'All');
+                    heatmapTitleCount.textContent = (allSubs?.submissions || 673).toLocaleString();
+                }
+                
+                // Donut chart offsets
+                const easyCircle = $('.lc-donut-easy');
+                if (easyCircle) {
+                    const easyOffset = 314.16 - (profileData.easySolved || 143);
+                    easyCircle.setAttribute('stroke-dashoffset', easyOffset);
+                }
+                const mediumCircle = $('.lc-donut-medium');
+                if (mediumCircle) {
+                    const mediumOffset = 314.16 - (profileData.mediumSolved || 33);
+                    mediumCircle.setAttribute('stroke-dashoffset', mediumOffset);
+                }
+                const hardCircle = $('.lc-donut-hard');
+                if (hardCircle) {
+                    const hardOffset = 314.16 - (profileData.hardSolved || 2);
+                    hardCircle.setAttribute('stroke-dashoffset', hardOffset);
+                }
             }
             
             // 3. Update LeetCode Badges
-            const badgeCountVal = $('.lc-badge-count');
-            if (badgeCountVal) badgeCountVal.textContent = badgesData.badgesCount || 3;
-            
-            const badgesIconsContainer = $('.lc-badges-icons');
-            if (badgesIconsContainer && badgesData.badges) {
-                badgesIconsContainer.innerHTML = '';
-                badgesData.badges.slice(0, 3).forEach((badge, idx) => {
-                    const badgeEl = document.createElement('div');
-                    badgeEl.className = 'lc-badge';
-                    const colorClass = idx === 1 ? 'blue' : '';
-                    badgeEl.innerHTML = `
-                        <div class="lc-badge-hex ${colorClass}" style="padding: 8px; display: flex; align-items: center; justify-content: center;">
-                            <img src="${badge.icon}" alt="${badge.displayName}" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 4px rgba(255,255,255,0.15));" title="${badge.displayName}">
-                        </div>
-                    `;
-                    badgesIconsContainer.appendChild(badgeEl);
-                });
-            }
-            
-            const recentBadgeName = $('.lc-badge-info strong');
-            if (recentBadgeName && badgesData.badges && badgesData.badges.length > 0) {
-                recentBadgeName.textContent = badgesData.badges[0].displayName || '50 Days Badge 2026';
+            if (badgesData) {
+                const badgeCountVal = $('.lc-badge-count');
+                if (badgeCountVal) badgeCountVal.textContent = badgesData.badgesCount || 3;
+                
+                const badgesIconsContainer = $('.lc-badges-icons');
+                if (badgesIconsContainer && badgesData.badges) {
+                    badgesIconsContainer.innerHTML = '';
+                    badgesData.badges.slice(0, 3).forEach((badge, idx) => {
+                        const badgeEl = document.createElement('div');
+                        badgeEl.className = 'lc-badge';
+                        const colorClass = idx === 1 ? 'blue' : '';
+                        badgeEl.innerHTML = `
+                            <div class="lc-badge-hex ${colorClass}" style="padding: 8px; display: flex; align-items: center; justify-content: center;">
+                                <img src="${badge.icon}" alt="${badge.displayName}" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 4px rgba(255,255,255,0.15));" title="${badge.displayName}">
+                            </div>
+                        `;
+                        badgesIconsContainer.appendChild(badgeEl);
+                    });
+                }
+                
+                const recentBadgeName = $('.lc-badge-info strong');
+                if (recentBadgeName && badgesData.badges && badgesData.badges.length > 0) {
+                    recentBadgeName.textContent = badgesData.badges[0].displayName || '50 Days Badge 2026';
+                }
+
+                const highlightBadge = $('.highlight-badge');
+                if (highlightBadge && badgesData.badges && badgesData.badges.length > 0) {
+                    highlightBadge.textContent = badgesData.badges[0].displayName || '50 Days Badge 2026';
+                }
             }
             
             // 4. Update Heatmap Meta & Highlight ratings/streak/badge dynamically
             const activeDaysVal = $('.lc-active-days');
-            if (activeDaysVal) activeDaysVal.textContent = calendarData.totalActiveDays || 188;
+            if (activeDaysVal) {
+                activeDaysVal.textContent = (calendarData && calendarData.totalActiveDays) || 188;
+            }
             
             const maxStreakVal = $('.lc-max-streak');
-            if (maxStreakVal) maxStreakVal.textContent = calendarData.streak || 118;
-            
-            const highlightRating = $('.highlight-rating');
-            if (highlightRating) {
-                highlightRating.textContent = `Contest Rating: ${Math.round(contestData.contestRating).toLocaleString() || '1,414'}`;
+            if (maxStreakVal) {
+                maxStreakVal.textContent = (calendarData && calendarData.streak) || 118;
             }
             
             const highlightStreak = $('.highlight-streak');
             if (highlightStreak) {
-                highlightStreak.textContent = `Max Streak: ${calendarData.streak || 118} Days`;
-            }
-            
-            const highlightBadge = $('.highlight-badge');
-            if (highlightBadge && badgesData.badges && badgesData.badges.length > 0) {
-                highlightBadge.textContent = badgesData.badges[0].displayName || '50 Days Badge 2026';
+                highlightStreak.textContent = `Max Streak: ${(calendarData && calendarData.streak) || 118} Days`;
             }
             
             // 5. Update real heatmap dynamically
-            if (calendarData.submissionCalendar) {
-                generateHeatmap(calendarData.submissionCalendar);
+            // Check calendarData first, fallback to profileData's calendar if calendar endpoint fails
+            const submissionCalendar = (calendarData && calendarData.submissionCalendar) || (profileData && profileData.submissionCalendar);
+            if (submissionCalendar) {
+                generateHeatmap(submissionCalendar);
+            } else {
+                generateHeatmap(); // Fallback to random/loading state if none are available
             }
             
         } catch (error) {
-            console.error('Error loading LeetCode data:', error);
+            console.error('Error rendering LeetCode data:', error);
         } finally {
             isLeetCodeStatsLoaded = true;
             if (shouldAnimateOnLoad) {
@@ -410,7 +466,7 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
     }
 
     // ===== LEETCODE HEATMAP =====
-    function generateHeatmap(submissionCalendarStr) {
+    function generateHeatmap(submissionCalendarStrOrObj) {
         const heatmap = $('#lc-heatmap');
         if (!heatmap) return;
         heatmap.innerHTML = ''; // Clear
@@ -431,11 +487,15 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
         startDate.setDate(endDate.getDate() - 363); // 364 days total (52 weeks)
 
         let submissions = {};
-        if (submissionCalendarStr) {
-            try {
-                submissions = JSON.parse(submissionCalendarStr);
-            } catch (e) {
-                console.error('Failed to parse submission calendar:', e);
+        if (submissionCalendarStrOrObj) {
+            if (typeof submissionCalendarStrOrObj === 'string') {
+                try {
+                    submissions = JSON.parse(submissionCalendarStrOrObj);
+                } catch (e) {
+                    console.error('Failed to parse submission calendar:', e);
+                }
+            } else if (typeof submissionCalendarStrOrObj === 'object') {
+                submissions = submissionCalendarStrOrObj;
             }
         }
 
@@ -451,7 +511,7 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
             const utcTimestamp = Math.floor(utcDate.getTime() / 1000).toString();
             
             let count = 0;
-            if (submissionCalendarStr) {
+            if (submissionCalendarStrOrObj) {
                 count = isFuture ? 0 : (submissions[utcTimestamp] || 0);
             } else {
                 // Fallback / Loading state: random but realistic contributions
