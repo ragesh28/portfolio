@@ -1429,7 +1429,8 @@ body.light .theme-toggle {
     grid-template-columns: 1.2fr 0.8fr;
 }
 
-.lc-row-3 {
+.lc-row-3,
+.lc-row-4 {
     grid-template-columns: 1fr;
 }
 
