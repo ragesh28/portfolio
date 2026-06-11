@@ -150,6 +150,60 @@
                         EVE — AI Assistant
                     </div>
                 </div>
+
+                <!-- EVE Premium Chat Section -->
+                <div class="eve-chat-section">
+                    <div class="eve-chat-header">
+                        <div class="eve-chat-logo">
+                            <i class="fas fa-robot" style="color: var(--accent-light);"></i>
+                        </div>
+                        <div class="eve-chat-title">
+                            <span class="eve-chat-name">EVE Assistant</span>
+                            <span class="eve-chat-status">
+                                <span class="eve-status-dot"></span>
+                                Active
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="ai-chat-messages" id="ai-chat-messages">
+                        <div class="ai-message bot">
+                            <div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>
+                            <div class="ai-msg-bubble">
+                                Hi! 👋 I'm EVE, Ragesh L's AI assistant. Ask me anything about his skills, projects, or LeetCode progress!
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="eve-prompt-wrap">
+                        <div class="eve-glow-border"></div>
+                        <div class="eve-glow-outer"></div>
+                        <div class="eve-glow-cursor"></div>
+                        <div class="eve-ripple-layer"></div>
+                        
+                        <div class="eve-option-tags" id="eve-option-tags"></div>
+                        
+                        <div class="eve-input-row">
+                            <div class="eve-menu-wrap">
+                                <button type="button" class="eve-plus-btn" id="eve-plus-btn" aria-label="Toggle options">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <div class="eve-dropdown" id="eve-dropdown" style="display: none;">
+                                    <ul>
+                                        <li data-shortcut="skills">Skills</li>
+                                        <li data-shortcut="projects">Projects</li>
+                                        <li data-shortcut="leetcode">LeetCode</li>
+                                        <li data-shortcut="contact">Contact</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <textarea class="eve-textarea" id="ai-chat-input" placeholder="Ask me anything..." rows="1" autocomplete="off"></textarea>
+                            <button class="eve-send-btn" id="ai-chat-send" aria-label="Send message">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="hero-scroll-indicator">
@@ -590,41 +644,7 @@
         </div>
     </footer>
 
-    <!-- ========== AI CHAT WIDGET ========== -->
-    <div class="ai-chat-widget" id="ai-chat-widget">
-        <button class="ai-chat-fab" id="ai-chat-fab" aria-label="Open AI Chat">
-            <i class="fas fa-robot ai-fab-icon"></i>
-            <i class="fas fa-times ai-fab-close"></i>
-            <div class="ai-fab-pulse"></div>
-        </button>
-        <div class="ai-chat-panel" id="ai-chat-panel">
-            <div class="ai-chat-header">
-                <div class="ai-chat-header-info">
-                    <div class="ai-avatar"><i class="fas fa-robot"></i></div>
-                    <div>
-                        <h4>Portfolio AI</h4>
-                        <span class="ai-status" id="ai-status">
-                            <span class="ai-status-dot"></span>
-                            Online
-                        </span>
-                    </div>
-                </div>
-                <button class="ai-chat-close" id="ai-chat-close"><i class="fas fa-minus"></i></button>
-            </div>
-            <div class="ai-chat-messages" id="ai-chat-messages">
-                <div class="ai-message bot">
-                    <div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>
-                    <div class="ai-msg-bubble">
-                        Hi! 👋 I'm Ragesh's Portfolio AI. Ask me anything about his skills, projects, or experience!
-                    </div>
-                </div>
-            </div>
-            <div class="ai-chat-input-area">
-                <input type="text" id="ai-chat-input" placeholder="Ask me anything..." autocomplete="off">
-                <button id="ai-chat-send"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
+
 
     <script type="module" src="eve-scene.js"></script>
     <script src="script.js"></script>
