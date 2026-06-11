@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE — Pure CSS 3D</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a1a;
+            color: #e0e0f0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            user-select: none;
+        }
+        body:active { cursor: grabbing; }
+
+        /* Background */
+        .bg {
+            position: fixed; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(10,60,120,0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(30,10,80,0.25) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(0,20,50,0.4) 0%, transparent 70%);
+        }
+
+        /* ==================== EVE CSS 3D ==================== */
+        .scene {
+            width: 320px;
+            height: 500px;
+            perspective: 900px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .eve-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.05s linear;
+        }
+
+        /* === HEAD === */
+        .head {
+            position: absolute;
+            width: 200px;
+            height: 170px;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transform-style: preserve-3d;
+        }
+
+        .head-dome {
+            width: 200px;
+            height: 170px;
+            border-radius: 50% 50% 45% 45%;
+            background: radial-gradient(ellipse at 35% 30%, #ffffff 0%, #f0f0f5 30%, #d8dae5 70%, #c0c4d0 100%);
+            box-shadow:
+                inset -15px -10px 30px rgba(0,0,0,0.06),
+                inset 20px 15px 25px rgba(255,255,255,0.8),
+                0 8px 40px rgba(0,0,0,0.15),
+                0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 3;
+        }
+
+        /* Glossy highlight on head */
+        .head-dome::before {
+            content: '';
+            position: absolute;
+            width: 60%;
+            height: 40%;
+            top: 8%;
+            left: 15%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.7) 0%, transparent 70%);
+        }
+
+        /* Head side depth panels */
+        .head-side-left, .head-side-right {
+            position: absolute;
+            width: 30px;
+            height: 140px;
+            top: 15px;
+            background: linear-gradient(180deg, #d0d2dd 0%, #b8bcc8 100%);
+            border-radius: 50%;
+        }
+        .head-side-left {
+            left: -8px;
+            transform: rotateY(-70deg);
+        }
+        .head-side-right {
+            right: -8px;
+            transform: rotateY(70deg);
+        }
+
+        /* === VISOR (Face) === */
+        .visor {
+            position: absolute;
+            width: 160px;
+            height: 100px;
+            top: 55px;
+            left: 50%;
+            transform: translateX(-50%) translateZ(15px);
+            border-radius: 50% 50% 45% 45%;
+            background: radial-gradient(ellipse at 40% 35%, #1a1a2e 0%, #0a0a14 40%, #050508 100%);
+            box-shadow:
+                inset 5px 3px 15px rgba(255,255,255,0.05),
+                inset -3px -3px 10px rgba(0,0,0,0.5),
+                0 2px 15px rgba(0,0,0,0.3);
+            z-index: 5;
+            overflow: hidden;
+        }
+
+        /* Visor glossy reflection */
+        .visor::before {
+            content: '';
+            position: absolute;
+            width: 90%;
+            height: 30%;
+            top: 5%;
+            left: 5%;
+            border-radius: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+        }
+
+        /* === EYES === */
+        .eyes {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 18px;
+            z-index: 6;
+        }
+
+        .eye {
+            width: 42px;
+            height: 36px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at 50% 40%, #00eeff 0%, #00bbff 40%, #0088dd 70%, #0066aa 100%);
+            box-shadow:
+                0 0 20px rgba(0,180,255,0.6),
+                0 0 40px rgba(0,150,255,0.3),
+                0 0 60px rgba(0,120,255,0.15),
+                inset 0 -3px 8px rgba(0,50,100,0.3);
+            position: relative;
+            animation: eyeGlow 3s ease-in-out infinite alternate;
+        }
+
+        /* Eye scan lines */
+        .eye::before {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border-radius: 50%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 3px,
+                rgba(0,0,0,0.08) 3px,
+                rgba(0,0,0,0.08) 4px
+            );
+        }
+
+        /* Eye highlight */
+        .eye::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 8px;
+            top: 6px;
+            left: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+        }
+
+        @keyframes eyeGlow {
+            0% { box-shadow: 0 0 20px rgba(0,180,255,0.5), 0 0 40px rgba(0,150,255,0.2); }
+            100% { box-shadow: 0 0 25px rgba(0,200,255,0.7), 0 0 50px rgba(0,180,255,0.35), 0 0 80px rgba(0,150,255,0.15); }
+        }
+
+        /* === NECK === */
+        .neck {
+            position: absolute;
+            width: 100px;
+            height: 25px;
+            top: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, #e8e8f0 0%, #d5d7e2 100%);
+            border-radius: 5px 5px 0 0;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* === BODY === */
+        .body {
+            position: absolute;
+            width: 190px;
+            height: 250px;
+            top: 195px;
+            left: 50%;
+            transform: translateX(-50%);
+            transform-style: preserve-3d;
+        }
+
+        .body-main {
+            width: 190px;
+            height: 250px;
+            border-radius: 30% 30% 50% 50% / 20% 20% 50% 50%;
+            background: radial-gradient(ellipse at 40% 25%, #ffffff 0%, #f2f2f8 25%, #dddee8 55%, #c8cad5 80%, #b5b8c5 100%);
+            box-shadow:
+                inset -20px -15px 40px rgba(0,0,0,0.06),
+                inset 25px 20px 35px rgba(255,255,255,0.7),
+                0 15px 50px rgba(0,0,0,0.2),
+                0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Body highlight */
+        .body-main::before {
+            content: '';
+            position: absolute;
+            width: 50%;
+            height: 35%;
+            top: 10%;
+            left: 18%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.5) 0%, transparent 70%);
+        }
+
+        /* Body side depth */
+        .body-side-left, .body-side-right {
+            position: absolute;
+            width: 30px;
+            height: 200px;
+            top: 25px;
+            background: linear-gradient(180deg, #c8cad5 0%, #b0b4c0 50%, #c0c4d0 100%);
+            border-radius: 50%;
+        }
+        .body-side-left {
+            left: -6px;
+            transform: rotateY(-65deg);
+        }
+        .body-side-right {
+            right: -6px;
+            transform: rotateY(65deg);
+        }
+
+        /* === ARMS === */
+        .arm {
+            position: absolute;
+            width: 38px;
+            height: 140px;
+            top: 220px;
+            border-radius: 50% / 30%;
+            z-index: 1;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .arm-left {
+            left: 50px;
+            background: radial-gradient(ellipse at 60% 30%, #ffffff 0%, #e8e8f0 40%, #d0d2dd 80%);
+            box-shadow:
+                inset 5px 5px 15px rgba(255,255,255,0.6),
+                inset -3px -3px 10px rgba(0,0,0,0.05),
+                -3px 5px 15px rgba(0,0,0,0.12);
+            transform: rotate(8deg);
+            transform-origin: top center;
+        }
+
+        .arm-right {
+            right: 50px;
+            background: radial-gradient(ellipse at 40% 30%, #ffffff 0%, #e8e8f0 40%, #d0d2dd 80%);
+            box-shadow:
+                inset -5px 5px 15px rgba(255,255,255,0.6),
+                inset 3px -3px 10px rgba(0,0,0,0.05),
+                3px 5px 15px rgba(0,0,0,0.12);
+            transform: rotate(-8deg);
+            transform-origin: top center;
+        }
+
+        /* Wave animation for arm */
+        .arm-right.waving {
+            animation: wave 1.5s ease-in-out;
+        }
+
+        @keyframes wave {
+            0% { transform: rotate(-8deg); }
+            15% { transform: rotate(-50deg) translateX(10px); }
+            30% { transform: rotate(-35deg) translateX(8px); }
+            45% { transform: rotate(-55deg) translateX(12px); }
+            60% { transform: rotate(-40deg) translateX(8px); }
+            80% { transform: rotate(-20deg) translateX(3px); }
+            100% { transform: rotate(-8deg); }
+        }
+
+        /* === SHADOW === */
+        .shadow {
+            position: absolute;
+            width: 180px;
+            height: 30px;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        /* ==================== UI ==================== */
+        .header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: linear-gradient(180deg, rgba(10,10,26,0.8) 0%, transparent 100%);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ccff, #7b5ea7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 6px 16px;
+            border-radius: 50px;
+            background: rgba(0,200,255,0.08);
+            border: 1px solid rgba(0,200,255,0.2);
+            color: #66ddff;
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            background: rgba(15,15,35,0.6);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 20px 40px;
+        }
+
+        .info-panel h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #fff, #aabbff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .info-panel p {
+            font-size: 0.8rem;
+            color: rgba(200,210,240,0.5);
+        }
+
+        .wave-btn {
+            position: fixed;
+            bottom: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, rgba(0,180,255,0.3), rgba(100,60,200,0.3));
+            border: 1px solid rgba(0,200,255,0.3);
+            border-radius: 50px;
+            padding: 12px 32px;
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        .wave-btn:hover {
+            background: linear-gradient(135deg, rgba(0,180,255,0.5), rgba(100,60,200,0.5));
+            border-color: rgba(0,200,255,0.6);
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,150,255,0.25);
+        }
+
+        .tech-badge {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            font-size: 0.65rem;
+            color: rgba(0,200,255,0.4);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Idle floating */
+        .eve-wrapper {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(var(--ry, 0deg)); }
+            50% { transform: translateY(-12px) rotateX(0deg) rotateY(var(--ry, 0deg)); }
+        }
+
+        @media (max-width: 600px) {
+            .scene { transform: scale(0.75); }
+            .info-panel { width: calc(100% - 40px); padding: 16px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg"></div>
+
+    <div class="header">
+        <div class="logo">EVE · CSS 3D</div>
+        <div class="badge">Pure HTML/CSS</div>
+    </div>
+
+    <div class="tech-badge">No 3D Engine · No GLB · No Libraries</div>
+
+    <!-- EVE built entirely with CSS -->
+    <div class="scene" id="scene">
+        <div class="eve-wrapper" id="eve">
+            <!-- Head -->
+            <div class="head">
+                <div class="head-side-left"></div>
+                <div class="head-dome"></div>
+                <div class="head-side-right"></div>
+                <!-- Visor -->
+                <div class="visor">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Neck -->
+            <div class="neck"></div>
+
+            <!-- Body -->
+            <div class="body">
+                <div class="body-side-left"></div>
+                <div class="body-main"></div>
+                <div class="body-side-right"></div>
+            </div>
+
+            <!-- Arms -->
+            <div class="arm arm-left"></div>
+            <div class="arm arm-right" id="arm-right"></div>
+
+            <!-- Shadow -->
+            <div class="shadow"></div>
+        </div>
+    </div>
+
+    <button class="wave-btn" onclick="sayHi()">👋 Say Hi</button>
+
+    <div class="info-panel">
+        <h1>EVE — AI Assistant</h1>
+        <p>Drag to rotate · Built with pure HTML & CSS · No 3D libraries</p>
+    </div>
+
+    <!-- Minimal JS for drag rotation only -->
+    <script>
+        const eve = document.getElementById('eve');
+        const arm = document.getElementById('arm-right');
+        let isDragging = false;
+        let startX = 0;
+        let currentY = 0;
+
+        document.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.wave-btn') || e.target.closest('.info-panel')) return;
+            isDragging = true;
+            startX = e.clientX;
+            eve.style.animation = 'none';
+        });
+
+        document.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            currentY += (e.clientX - startX) * 0.5;
+            startX = e.clientX;
+            eve.style.transform = `translateY(0) rotateY(${currentY}deg)`;
+        });
+
+        document.addEventListener('pointerup', () => {
+            isDragging = false;
+            eve.style.setProperty('--ry', currentY + 'deg');
+            eve.style.animation = '';
+        });
+
+        // Touch
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.wave-btn') || e.target.closest('.info-panel')) return;
+            isDragging = true;
+            startX = e.touches[0].clientX;
+            eve.style.animation = 'none';
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentY += (e.touches[0].clientX - startX) * 0.5;
+            startX = e.touches[0].clientX;
+            eve.style.transform = `translateY(0) rotateY(${currentY}deg)`;
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+            isDragging = false;
+            eve.style.setProperty('--ry', currentY + 'deg');
+            eve.style.animation = '';
+        });
+
+        function sayHi() {
+            arm.classList.remove('waving');
+            void arm.offsetWidth;
+            arm.classList.add('waving');
+            arm.addEventListener('animationend', () => {
+                arm.classList.remove('waving');
+            }, { once: true });
+        }
+    </script>
+</body>
+</html>
