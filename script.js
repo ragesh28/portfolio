@@ -192,17 +192,19 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
     // ===== FETCH LEETCODE STATS =====
     async function fetchLeetCodeStats() {
         try {
-            const [profileRes, contestRes, badgesRes] = await Promise.all([
-                fetch('https://alfa-leetcode-api.onrender.com/lragesh28'),
+            const [profileRes, contestRes, badgesRes, calendarRes] = await Promise.all([
+                fetch('https://alfa-leetcode-api.onrender.com/userProfile/lragesh28'),
                 fetch('https://alfa-leetcode-api.onrender.com/lragesh28/contest'),
-                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/badges')
+                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/badges'),
+                fetch('https://alfa-leetcode-api.onrender.com/lragesh28/calendar')
             ]);
             
-            if (!profileRes.ok || !contestRes.ok || !badgesRes.ok) throw new Error('LeetCode stats fetch failed');
+            if (!profileRes.ok || !contestRes.ok || !badgesRes.ok || !calendarRes.ok) throw new Error('LeetCode stats fetch failed');
             
             const profileData = await profileRes.json();
             const contestData = await contestRes.json();
             const badgesData = await badgesRes.json();
+            const calendarData = await calendarRes.json();
             
             // 1. Update targets for counter animations
             const solvedStat = $('[data-target="150"]');
@@ -295,6 +297,28 @@ If asked about something unrelated to Ragesh, briefly answer but steer back to t
             const recentBadgeName = $('.lc-badge-info strong');
             if (recentBadgeName && badgesData.badges && badgesData.badges.length > 0) {
                 recentBadgeName.textContent = badgesData.badges[0].displayName || '50 Days Badge 2026';
+            }
+            
+            // 4. Update Heatmap Meta & Highlight ratings/streak/badge dynamically
+            const activeDaysVal = $('.lc-active-days');
+            if (activeDaysVal) activeDaysVal.textContent = calendarData.totalActiveDays || 188;
+            
+            const maxStreakVal = $('.lc-max-streak');
+            if (maxStreakVal) maxStreakVal.textContent = calendarData.streak || 118;
+            
+            const highlightRating = $('.highlight-rating');
+            if (highlightRating) {
+                highlightRating.textContent = `Contest Rating: ${Math.round(contestData.contestRating).toLocaleString() || '1,414'}`;
+            }
+            
+            const highlightStreak = $('.highlight-streak');
+            if (highlightStreak) {
+                highlightStreak.textContent = `Max Streak: ${calendarData.streak || 118} Days`;
+            }
+            
+            const highlightBadge = $('.highlight-badge');
+            if (highlightBadge && badgesData.badges && badgesData.badges.length > 0) {
+                highlightBadge.textContent = badgesData.badges[0].displayName || '50 Days Badge 2026';
             }
             
         } catch (error) {
