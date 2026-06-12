@@ -1,21 +1,9 @@
 /**
- * Netlify Serverless Function: Secure Gemini API Chat Proxy with Key Rotation
+ * Netlify Serverless Function: Secure Groq API Chat Proxy with Key Rotation
  * 
- * This function translates OpenAI-style chat completions requests to Gemini API requests,
- * and executes them with automatic key rotation across 8 Gemini API keys.
+ * This function handles OpenAI-style chat completions requests using the Groq API,
+ * and executes them with automatic key rotation across API keys.
  */
-
-// Hardcoded fallback keys (used if GEMINI_KEYS environment variable is not defined)
-const FALLBACK_KEYS = [
-    "AIzaSyCm_BqyIQG4xHVrZO-teBOZtWyHNegJ0P0", // lragesh278
-    "AIzaSyBmONTaDLx_3YOM_ePoAbrOyGHQZmbBHYE", // lragesh104
-    "AIzaSyAr-rLouqDez5KtO6jTvlsl0beU_5SZJOw", // saru
-    "AIzaSyDYspZp9Dh-hOmFpua70v7MdUGHjIrkwnw", // lragesh28
-    "AIzaSyC5pZ7Wnb9EllRAX13RmS1WbCK9jfJsaOs", // lragesh60
-    "AIzaSyC_bsDM25K03VNrVdhgXH_oST5zZcJItDE", // lragesh36
-    "AIzaSyCjY0Q01cfcxFOtbB3jurvXQJXoOvMtjjU", // ragesh435
-    "AIzaSyBxE5JyJo0aR2okRWnJ41xiFW-e_mlyee0"  // lrageshmail28
-];
 
 exports.handler = async function (event, context) {
     // Only allow POST requests
@@ -39,62 +27,47 @@ exports.handler = async function (event, context) {
             };
         }
 
-        // 1. Convert OpenAI message format to Gemini format
-        // Find the system prompt if present
-        const systemMessage = openaiMessages.find(m => m.role === 'system');
-        const systemPrompt = systemMessage ? systemMessage.content : '';
-
-        // Convert conversation messages (roles: user -> user, assistant -> model)
-        const contents = openaiMessages
-            .filter(m => m.role !== 'system')
-            .map(m => {
-                const role = m.role === 'assistant' ? 'model' : 'user';
-                return {
-                    role: role,
-                    parts: [{ text: m.content || '' }]
-                };
-            });
-
-        // 2. Prepare API keys for rotation
-        // Get keys from environment variable (preferred) or use fallback
-        const envKeys = process.env.GEMINI_KEYS 
-            ? process.env.GEMINI_KEYS.split(',').map(k => k.trim()).filter(Boolean)
+        // 1. Prepare API keys
+        // Get keys from environment variable
+        const envKeys = process.env.GROQ_API_KEY 
+            ? process.env.GROQ_API_KEY.split(',').map(k => k.trim()).filter(Boolean)
             : [];
         
-        const apiKeys = envKeys.length > 0 ? envKeys : FALLBACK_KEYS;
+        const apiKeys = envKeys;
 
-        // 3. Try calling Gemini API with key rotation
+        if (apiKeys.length === 0) {
+            return {
+                statusCode: 500,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ error: "No API keys configured. Please add GROQ_API_KEY to your .env file." })
+            };
+        }
+
+        // 2. Try calling Groq API with key rotation
         let lastError = null;
         
         for (let i = 0; i < apiKeys.length; i++) {
             const currentKey = apiKeys[i];
             const censoredKey = currentKey.substring(0, 8) + "..." + currentKey.substring(currentKey.length - 4);
-            console.log(`Attempting Gemini API request using key index ${i} (${censoredKey})`);
+            console.log(`Attempting Groq API request using key index ${i} (${censoredKey})`);
 
             try {
-                // Setup Gemini API request payload
+                // Setup Groq API request payload
                 const requestPayload = {
-                    contents: contents,
-                    generationConfig: {
-                        temperature: body.temperature || 0.7,
-                        maxOutputTokens: body.max_tokens || 200
-                    }
+                    model: "llama-3.1-8b-instant", // Using the correct Groq model
+                    messages: openaiMessages,
+                    temperature: body.temperature || 0.7,
+                    max_tokens: body.max_tokens || 200
                 };
 
-                // Add system prompt if provided
-                if (systemPrompt) {
-                    requestPayload.systemInstruction = {
-                        parts: [{ text: systemPrompt }]
-                    };
-                }
-
-                // Call Gemini API (using gemini-1.5-flash as default)
+                // Call Groq API
                 const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${currentKey}`,
+                    `https://api.groq.com/openai/v1/chat/completions`,
                     {
                         method: "POST",
                         headers: {
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${currentKey}`
                         },
                         body: JSON.stringify(requestPayload)
                     }
@@ -103,37 +76,23 @@ exports.handler = async function (event, context) {
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     const errorMessage = errorData.error?.message || response.statusText;
-                    throw new Error(`Gemini API Error (Status ${response.status}): ${errorMessage}`);
+                    throw new Error(`Groq API Error (Status ${response.status}): ${errorMessage}`);
                 }
 
                 const data = await response.json();
 
-                // Validate Gemini response structure
-                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-                    const aiTextResponse = data.candidates[0].content.parts[0].text;
-
-                    // Formulate response in OpenAI format to keep client-side JS happy
-                    const openAIFormattedResponse = {
-                        choices: [
-                            {
-                                message: {
-                                    role: "assistant",
-                                    content: aiTextResponse
-                                }
-                            }
-                        ]
-                    };
-
+                // Validate Groq response structure
+                if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
                     console.log(`Success with key index ${i}!`);
                     return {
                         statusCode: 200,
                         headers: {
                             "Content-Type": "application/json"
                         },
-                        body: JSON.stringify(openAIFormattedResponse)
+                        body: JSON.stringify(data)
                     };
                 } else {
-                    throw new Error("Invalid or empty response structure received from Gemini API");
+                    throw new Error("Invalid or empty response structure received from Groq API");
                 }
             } catch (err) {
                 console.warn(`Key index ${i} failed. Error: ${err.message}`);
@@ -143,12 +102,12 @@ exports.handler = async function (event, context) {
         }
 
         // If we reach here, all keys failed
-        console.error("All Gemini API keys were exhausted or failed.");
+        console.error("All Groq API keys were exhausted or failed.");
         return {
             statusCode: 500,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                error: "All Gemini API keys are currently exhausted. Please try again later.",
+                error: "All API keys are currently exhausted. Please try again later.",
                 details: lastError ? lastError.message : "Unknown error"
             })
         };

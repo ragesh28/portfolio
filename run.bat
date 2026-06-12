@@ -13,5 +13,5 @@ echo.
 :: Open the browser after a short delay
 start "" http://127.0.0.1:3030
 
-:: Start the server
-npx -y http-server . -p 3030 -c-1 --cors
+:: Start the server with Netlify CLI to support the serverless functions (chat.js)
+npx -y netlify-cli dev -p 3030
