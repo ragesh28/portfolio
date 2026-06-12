@@ -29,13 +29,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     let isMobile = window.innerWidth < 768 || 'ontouchstart' in window;
     let centerOffset = new THREE.Vector3(); // saved center at frame 112
 
-    // Mouse tracking — EVE follows the cursor
-    let mouseX = 0, mouseY = 0;       // current mouse (normalized -1 to 1)
-    let targetRotX = 0, targetRotY = 0; // target rotation for tracking
-    let currentRotX = 0, currentRotY = 0; // smoothed current rotation
-    const MAX_ROT_X = 0.8;  // max horizontal rotation (radians, ~45°)
-    const MAX_ROT_Y = 0.4;  // max vertical rotation (radians, ~23°)
-
     // Orbit camera
     let isDragging = false;
     let prevX = 0, prevY = 0;
@@ -73,7 +66,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         loadModel(container);
         setupOrbitControls(container);
-        setupMouseTracking();
 
         window.addEventListener('resize', () => {
             if (!camera || !renderer) return;
@@ -92,11 +84,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     function setupOrbitControls(container) {
         container.style.cursor = 'grab';
-        let pointerStartX = 0, pointerStartY = 0;
-
         container.addEventListener('pointerdown', (e) => {
             isDragging = true; prevX = e.clientX; prevY = e.clientY;
-            pointerStartX = e.clientX; pointerStartY = e.clientY;
             container.style.cursor = 'grabbing'; e.preventDefault();
         });
         window.addEventListener('pointermove', (e) => {
@@ -106,23 +95,13 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
             targetPhi = Math.max(0.3, Math.min(Math.PI - 0.3, targetPhi));
             prevX = e.clientX; prevY = e.clientY;
         });
-        window.addEventListener('pointerup', (e) => {
-            if (isDragging) {
-                // If the pointer barely moved, it's a click → play wave
-                const dx = Math.abs(e.clientX - pointerStartX);
-                const dy = Math.abs(e.clientY - pointerStartY);
-                if (dx < 5 && dy < 5) {
-                    playWave();
-                    console.log('EVE: 👆 Clicked! Playing wave');
-                }
-            }
+        window.addEventListener('pointerup', () => {
             isDragging = false;
             const c = document.getElementById('eve-3d-container');
             if (c) c.style.cursor = 'grab';
         });
         container.addEventListener('touchstart', (e) => {
             isDragging = true; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
-            pointerStartX = e.touches[0].clientX; pointerStartY = e.touches[0].clientY;
         }, { passive: true });
         container.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
@@ -131,18 +110,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
             targetPhi = Math.max(0.3, Math.min(Math.PI - 0.3, targetPhi));
             prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
         }, { passive: true });
-        container.addEventListener('touchend', (e) => {
-            if (isDragging) {
-                const lastX = e.changedTouches?.[0]?.clientX || pointerStartX;
-                const lastY = e.changedTouches?.[0]?.clientY || pointerStartY;
-                const dx = Math.abs(lastX - pointerStartX);
-                const dy = Math.abs(lastY - pointerStartY);
-                if (dx < 5 && dy < 5) {
-                    playWave();
-                }
-            }
-            isDragging = false;
-        });
+        container.addEventListener('touchend', () => { isDragging = false; });
     }
 
     function loadModel(container) {
@@ -260,9 +228,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
             }
         }
 
-        // Mouse tracking — EVE follows the cursor
-        updateMouseTracking();
-
         // Smooth orbit camera
         orbitTheta += (targetTheta - orbitTheta) * 0.1;
         orbitPhi += (targetPhi - orbitPhi) * 0.1;
@@ -274,63 +239,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         camera.lookAt(0, 0, 0);
 
         renderer.render(scene, camera);
-    }
-
-    // === MOUSE TRACKING ===
-    function setupMouseTracking() {
-        const updateMousePosition = (clientX, clientY) => {
-            const container = document.getElementById('eve-3d-container');
-            if (!container) return;
-            // Get center of EVE's container
-            const rect = container.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-
-            // Map [0, centerX] -> [-1, 0] and [centerX, windowWidth] -> [0, 1]
-            if (clientX < centerX) {
-                mouseX = centerX > 0 ? (clientX - centerX) / centerX : 0;
-            } else {
-                const rightSpace = window.innerWidth - centerX;
-                mouseX = rightSpace > 0 ? (clientX - centerX) / rightSpace : 0;
-            }
-
-            if (clientY < centerY) {
-                mouseY = centerY > 0 ? (clientY - centerY) / centerY : 0;
-            } else {
-                const bottomSpace = window.innerHeight - centerY;
-                mouseY = bottomSpace > 0 ? (clientY - centerY) / bottomSpace : 0;
-            }
-        };
-
-        // Track mouse across the entire page
-        document.addEventListener('mousemove', (e) => {
-            updateMousePosition(e.clientX, e.clientY);
-        }, { passive: true });
-
-        // Touch support
-        document.addEventListener('touchmove', (e) => {
-            updateMousePosition(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive: true });
-
-        console.log('EVE: 👀 Mouse tracking enabled');
-    }
-
-    function updateMouseTracking() {
-        if (!eveRoot || isDragging) return;
-
-        // Target rotation based on mouse position
-        // Positive mouseX (right) = positive Y rotation (look right)
-        targetRotY = mouseX * MAX_ROT_X;  // horizontal: look same direction as mouse
-        targetRotX = mouseY * MAX_ROT_Y;  // vertical: mouse up = look up
-
-        // Smooth lerp towards target (0.05 = very smooth, natural follow)
-        currentRotX += (targetRotX - currentRotX) * 0.05;
-        currentRotY += (targetRotY - currentRotY) * 0.05;
-
-        // Apply rotation to the model root
-        // Only apply mouse tracking rotation, preserving the animation rotations
-        eveRoot.rotation.x = currentRotX;
-        eveRoot.rotation.y = currentRotY;
     }
 
     // PUBLIC API
