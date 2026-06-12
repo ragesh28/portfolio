@@ -82,35 +82,87 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         }, { threshold: 0.05 }).observe(container);
     }
 
+    let baseTheta = 0, basePhi = Math.PI / 2;
+    let downTime = 0, downX = 0, downY = 0;
+
     function setupOrbitControls(container) {
         container.style.cursor = 'grab';
+        
         container.addEventListener('pointerdown', (e) => {
-            isDragging = true; prevX = e.clientX; prevY = e.clientY;
-            container.style.cursor = 'grabbing'; e.preventDefault();
-        });
-        window.addEventListener('pointermove', (e) => {
-            if (!isDragging) return;
-            targetTheta -= (e.clientX - prevX) * 0.005;
-            targetPhi -= (e.clientY - prevY) * 0.005;
-            targetPhi = Math.max(0.3, Math.min(Math.PI - 0.3, targetPhi));
+            isDragging = true; 
             prevX = e.clientX; prevY = e.clientY;
+            downX = e.clientX; downY = e.clientY;
+            downTime = Date.now();
+            container.style.cursor = 'grabbing'; 
+            e.preventDefault();
         });
-        window.addEventListener('pointerup', () => {
+        
+        window.addEventListener('pointermove', (e) => {
+            if (isDragging) {
+                baseTheta -= (e.clientX - prevX) * 0.005;
+                basePhi -= (e.clientY - prevY) * 0.005;
+                basePhi = Math.max(0.3, Math.min(Math.PI - 0.3, basePhi));
+                targetTheta = baseTheta;
+                targetPhi = basePhi;
+                prevX = e.clientX; prevY = e.clientY;
+            } else {
+                // Mouse tracking: look at cursor smoothly when not dragging
+                const mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                const mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+                targetTheta = baseTheta + (mouseX * -0.5);
+                targetPhi = basePhi + (mouseY * -0.2);
+            }
+        });
+        
+        window.addEventListener('pointerup', (e) => {
+            if (!isDragging) return;
             isDragging = false;
+            
             const c = document.getElementById('eve-3d-container');
             if (c) c.style.cursor = 'grab';
+            
+            // If it was a quick tap without much movement, trigger the wave
+            const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
+            if (Date.now() - downTime < 300 && dist < 10) {
+                if (window.eveAnimate) window.eveAnimate('wave');
+            }
+            
+            // Snap back to base position after interaction
+            targetTheta = baseTheta;
+            targetPhi = basePhi;
         });
+        
         container.addEventListener('touchstart', (e) => {
-            isDragging = true; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+            isDragging = true; 
+            prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+            downX = prevX; downY = prevY;
+            downTime = Date.now();
         }, { passive: true });
+        
         container.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-            targetTheta -= (e.touches[0].clientX - prevX) * 0.005;
-            targetPhi -= (e.touches[0].clientY - prevY) * 0.005;
-            targetPhi = Math.max(0.3, Math.min(Math.PI - 0.3, targetPhi));
+            baseTheta -= (e.touches[0].clientX - prevX) * 0.005;
+            basePhi -= (e.touches[0].clientY - prevY) * 0.005;
+            basePhi = Math.max(0.3, Math.min(Math.PI - 0.3, basePhi));
+            targetTheta = baseTheta;
+            targetPhi = basePhi;
             prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
         }, { passive: true });
-        container.addEventListener('touchend', () => { isDragging = false; });
+        
+        container.addEventListener('touchend', (e) => { 
+            if (!isDragging) return;
+            isDragging = false; 
+            
+            const touch = e.changedTouches[0];
+            if (touch) {
+                const dist = Math.hypot(touch.clientX - downX, touch.clientY - downY);
+                if (Date.now() - downTime < 300 && dist < 15) {
+                    if (window.eveAnimate) window.eveAnimate('wave');
+                }
+            }
+            targetTheta = baseTheta;
+            targetPhi = basePhi;
+        });
     }
 
     function loadModel(container) {

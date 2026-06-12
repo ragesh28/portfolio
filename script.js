@@ -20,6 +20,51 @@
     document.documentElement.style.setProperty('--accent-rgb', hslToRgbString(randomHue, 91, 50));
     console.log(`Initialized with random hue: ${randomHue}`);
 
+    // ===== DYNAMIC CLICK RIPPLE THEME =====
+    document.addEventListener('click', (e) => {
+        // Ignore clicks on interactive elements or EVE so we don't freeze them!
+        if (e.target.closest('button, a, input, textarea, .eve-3d-wrapper, .eve-chat-section')) {
+            return;
+        }
+
+        // Generate new color
+        const newHue = Math.floor(Math.random() * 360);
+
+        if (!document.startViewTransition) {
+            document.documentElement.style.setProperty('--accent-hue', newHue);
+            document.documentElement.style.setProperty('--accent-rgb', hslToRgbString(newHue, 91, 50));
+            return;
+        }
+
+        const x = e.clientX;
+        const y = e.clientY;
+
+        const transition = document.startViewTransition(() => {
+            document.documentElement.style.setProperty('--accent-hue', newHue);
+            document.documentElement.style.setProperty('--accent-rgb', hslToRgbString(newHue, 91, 50));
+        });
+
+        transition.ready.then(() => {
+            const endRadius = Math.hypot(
+                Math.max(x, innerWidth - x),
+                Math.max(y, innerHeight - y)
+            );
+            document.documentElement.animate(
+                {
+                    clipPath: [
+                        `circle(0px at ${x}px ${y}px)`,
+                        `circle(${endRadius}px at ${x}px ${y}px)`
+                    ]
+                },
+                {
+                    duration: 2000,
+                    easing: 'ease-out',
+                    pseudoElement: '::view-transition-new(root)'
+                }
+            );
+        });
+    });
+
     // ===== CONFIG =====
     const LOADING_DURATION = 3200; // ms for the loading overlay
 
